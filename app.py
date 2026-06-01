@@ -400,6 +400,51 @@ def save_settings():
     return jsonify({'ok': True})
 
 
+# ── SMS Proxy (Thaibulksms) ───────────────────────────────────────────────────
+@app.route('/api/sms/test', methods=['POST'])
+def sms_test():
+    """Proxy Thaibulksms API to avoid CORS"""
+    import urllib.request
+    import urllib.error
+
+    b = request.get_json() or {}
+    api_key = b.get('apiKey', '')
+    api_secret = b.get('apiSecret', '')
+    phone = b.get('phone', '')
+    message = b.get('message', '[WIPTOWN] ทดสอบ SMS สำเร็จ!')
+
+    if not api_key or not api_secret or not phone:
+        return jsonify({'ok': False, 'error': 'กรุณากรอก API Key, Secret และเบอร์โทร'}), 400
+
+    # Thaibulksms API v2
+    url = 'https://bulk.thaibulksms.com/sms'
+    payload = json.dumps({
+        'msisdn': phone,
+        'message': message,
+        'sender': 'WIPTOWN',
+    }).encode('utf-8')
+
+    # Basic auth: api_key:api_secret
+    import base64
+    credentials = base64.b64encode(f"{api_key}:{api_secret}".encode()).decode()
+
+    req = urllib.request.Request(url, data=payload, method='POST')
+    req.add_header('Content-Type', 'application/json')
+    req.add_header('Authorization', f'Basic {credentials}')
+
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            result = json.loads(resp.read().decode())
+            return jsonify({'ok': True, 'result': result})
+    except urllib.error.HTTPError as e:
+        body = e.read().decode() if e.fp else ''
+        log.error(f"Thaibulksms HTTP error {e.code}: {body}")
+        return jsonify({'ok': False, 'error': f'HTTP {e.code}: {body}'}), 502
+    except Exception as e:
+        log.error(f"Thaibulksms error: {e}")
+        return jsonify({'ok': False, 'error': str(e)}), 502
+
+
 # ── Local dev entry point ─────────────────────────────────────────────────────
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8765))

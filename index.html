@@ -1045,7 +1045,12 @@ async function testSms(){
     if(!sid||!tok||!from){showToast('กรุณากรอก Twilio ให้ครบ','error');return;}
     showToast('📱 กำลังส่ง SMS...','info');
     try{var r=await fetch('https://api.twilio.com/2010-04-01/Accounts/'+sid+'/Messages.json',{method:'POST',headers:{Authorization:'Basic '+btoa(sid+':'+tok),'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({From:from,To:phone,Body:'[WIPTOWN] ทดสอบ SMS สำเร็จ!'})});var d=await r.json();if(d.sid)showToast('✅ ส่ง SMS สำเร็จ!','success');else showToast('❌ '+(d.message||'error'),'error');}catch(e){showToast('❌ '+e.message,'error');}
-  } else {showToast('ℹ️ THAIBULKSMS: ต้องใช้ backend proxy (CORS)','info');}
+  } else {
+    var apiKey=document.getElementById('sThUser').value.trim(),apiSecret=document.getElementById('sThPass').value.trim();
+    if(!apiKey||!apiSecret){showToast('กรุณากรอก API Key และ Secret','error');return;}
+    showToast('📱 กำลังส่ง SMS...','info');
+    try{var r=await fetch('/api/sms/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({apiKey:apiKey,apiSecret:apiSecret,phone:phone,message:'[WIPTOWN] ทดสอบ SMS สำเร็จ!'})});var d=await r.json();if(d.ok)showToast('✅ ส่ง SMS สำเร็จ!','success');else showToast('❌ '+(d.error||'error'),'error');}catch(e){showToast('❌ '+e.message,'error');}
+  }
 }
 
 // ─── Settings ──────────────────────────────────────────────────────────────────
